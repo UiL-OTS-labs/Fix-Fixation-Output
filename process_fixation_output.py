@@ -410,7 +410,7 @@ def process_jnf_agc_files() -> None:
 
         # Write the ACT file to an actual file on the filesysten
         with open(os.path.join(_result_path, '{}.act'.format(short_filename)), 'w+') as f:
-            f.writelines([' '.join(x) + "\r\n" for x in act])
+            f.writelines([' '.join(x) + "\n" for x in act])
             f.close()
 
         # Print a separator line for output readability
@@ -462,7 +462,7 @@ def process_combined_file_lines(lines: List[List[str]], imgfile_index: int, file
 
         # Write this line to the output file
         file.write(" ".join(output_line))
-        file.write("\r\n")
+        file.write("\n")
 
 
 def combine_act_files() -> None:
@@ -481,7 +481,7 @@ def combine_act_files() -> None:
         print('Writing headers')
         f.write('expname blocknr subjectnr cond item pagenr code code2 ffdur ffqual ffbck ffin ffout rpdur rpqual '
                 'rpcnt rpsacc rpout tgdur tgqual tgcnt tgsacc tgout gdur gqual gcnt gsacc gbck gout totfixdur '
-                'totfixcnt NumFixQualNot0 totfixQual0dur totfixQual0cnt\r\n')
+                'totfixcnt NumFixQualNot0 totfixQual0dur totfixQual0cnt\n')
         print()
 
         # Go over all the generated ACT files
@@ -523,7 +523,7 @@ def combine_ags_files() -> None:
         # Write the file headers, for clarity
         print('Writing headers')
         output_file.write('expname cond item timfile blocknr subjectnr pagenr samplenr samstart event fixnr fixdur '
-                          'qual obtnr code code2 timcode timstart timname\r\n')
+                          'qual obtnr code code2 timcode timstart timname\n')
 
         # Loop over every file and open that file
         for file in files:
