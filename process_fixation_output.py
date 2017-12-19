@@ -84,7 +84,6 @@ def confirm_result_path() -> str:
     If the given folder does not exist, the user will be asked to supply the path to the
     folder.
 
-    :param folder: The path to the folder to be checked
     :return:
     """
     # Define a message for if the specified folder exists and contains the right files
