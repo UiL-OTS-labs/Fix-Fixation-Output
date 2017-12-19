@@ -1,18 +1,28 @@
 #! /usr/bin/env python3
+"""
+A python script to process the output from Fixation. This adds extra information not given by the Fixation output
+and combines the output.
 
-#  imports
+See README.md in https://github.com/UiL-OTS-labs/Fix-Fixation-Output for more detailed info
+
+Adapted from the original perl scripts developed at UiL OTS.
+"""
+
+"*** Imports ***"
 import os
 import re
 from typing import List, Dict, IO
 
-# variables
+"*** Variables ***"
 _result_path = ''  # Fixation result files folder.
 _act_files = []  # This will contain all ACT data, used to generate the allACTFiles file
 
+"*** General helper functions ***"
+
 
 def ask(message: str) -> bool:
-    """
-    This function is a simple way to get a [Y/n] message on the screen.
+    """This function is a simple way to get a [Y/n] message on the screen.
+
     :param message: The question to be asked
     :return: If the person answered yes, a True will be returned
     """
@@ -20,9 +30,9 @@ def ask(message: str) -> bool:
 
 
 def ask_for_path() -> str:
-    """
-    This funtion is used to ask the user for the location of a folder. It will also verify that folder, and ask again
-    if the folder doesn't exist.
+    """This funtion is used to ask the user for the location of a folder.
+
+    It will also verify that folder, and ask again if the folder doesn't exist.
     :return: folder location
     """
     # Message to display asking for the folder location
@@ -55,9 +65,7 @@ e.g. "D:/eyetrack/exp/data/[project]/result" or "exp/[project]/result"\n"""
 
 
 def autodetect_result_path() -> str:
-    """
-    This function tries to autodetect the right folder to use by walking over all sub folders with a max depth of 1.
-    This is accomplished by simply looping over sub folders till we find one with jnf and agc files.
+    """This function tries to autodetect the right folder to use by walking over all sub folders with a max depth of 1.
 
     :return: The folder if found, otherwise current dir
     """
@@ -74,8 +82,7 @@ def autodetect_result_path() -> str:
 
 
 def confirm_result_path() -> str:
-    """
-    This function checks if a the current result path exists and contains INF/AGC files
+    """This function checks if a the current result path exists and contains INF/AGC files
 
     If it exists, the user will be asked with a specified message to confirm that this is the folder to be used.
     If the user indicates that this is in fact not the folder that should be used, it will ask for
@@ -119,8 +126,7 @@ def confirm_result_path() -> str:
 
 
 def does_folder_contain_files(file_extension: str, folder: str) -> bool:
-    """
-    This function is used to check if a folder contains files with a certain file extension
+    """This function is used to check if a folder contains files with a certain file extension
 
     :param file_extension: The required file extension
     :param folder: The to be checked folder
@@ -137,9 +143,10 @@ def does_folder_contain_files(file_extension: str, folder: str) -> bool:
 
 
 def check_result_path_writable_executable() -> bool:
-    """
-    This function checks if the result directory is both writable and executable. We don't need to check readable, as
-    the previous commands to get the directory will fail if they can't read the folder.
+    """This function checks if the result directory is both writable and executable.
+
+    We don't need to check readable, as the previous commands to get the directory will fail if they can't read the
+    folder.
 
     We need executable permissions on the folder so that we can use search functions in the folder.
     :return: A boolean indicating if the result directory is writable
@@ -148,8 +155,9 @@ def check_result_path_writable_executable() -> bool:
 
 
 def safe_exit() -> None:
-    """
-    This function is used to exit from the program without closing the window. This is necessary as this script will
+    """This function is used to exit from the program without closing the window.
+
+    This function asks the user to press enter before actually closing the window. This is necessary as this script will
     probably be run on Windows mostly, and default behaviour is to open it's own prompt for the script.
     :return:
     """
@@ -158,10 +166,14 @@ def safe_exit() -> None:
     exit()
 
 
+"*** Processing functions ***"
+
+
 def sort_jnf_file(file: str) -> List[List[str]]:
-    """
+    """This function sorts the entries in a JNF file
+
     This function loads a JNF files, and sorts it's contents on the imgfile and code fields, in ascending order.
-    It also ignores the column headers
+    It also ignores the column headers, so that we do not process it in any step.
 
     :param file: The file to be read
     :return: A list of lists. Every list in the list represents a line in the files, splitted into the file columns
@@ -181,8 +193,8 @@ def sort_jnf_file(file: str) -> List[List[str]]:
 
 
 def make_trt(lines: List[List[str]]) -> Dict[str, List[str]]:
-    """
-    This function calculates the missing values for a JNF file.
+    """This function calculates the missing values from a JNF file.
+
     :param lines: A list of lists representing the JNF file
     :return: a dictionary with as key an combination of pla_name and last_code, with as value the TRT values in a list
     """
@@ -300,8 +312,7 @@ def make_trt(lines: List[List[str]]) -> Dict[str, List[str]]:
 
 
 def make_act(trt: Dict[str, List[str]], agc: str) -> List[List[str]]:
-    """
-    This function generates a ACT file for a given AGC file and a given TRT dict.
+    """This function generates a ACT file for a given AGC file and a given TRT dict.
 
     :param trt: The TRT dict generated by make_trt(1).
     :param agc: The location of the AGC file
@@ -335,9 +346,10 @@ def make_act(trt: Dict[str, List[str]], agc: str) -> List[List[str]]:
 
 
 def process_jnf_agc_files() -> None:
-    """
+    """This function processes all JNF and AGC files.
+
     This function opens an JNF file, sorts it and calculates a trt for it. It then uses this generated TRT to create a
-    ACT file for every AGC file.
+    ACT file for the corresponding AGC file.
     :return: nothing!
     """
     # Get a sorted list of all JNF files in the result dir
@@ -380,10 +392,11 @@ def process_jnf_agc_files() -> None:
 
 
 def process_combined_file_lines(lines: List[List[str]], imgfile_index: int, file: IO) -> None:
-    """
-    This function goes over every line in the supplied line list, processes it and writes the result to a specified
-    file.
+    """This function processes every supplied line and writes it to a supplied file
 
+    This function is used by both combine functions to write their lines to the combined file.
+    It also splits the imgfile column in two columns: cond and item. You need to specify the index
+    this column.
 
     :param lines: A list of lines to process
     :param imgfile_index: The index on which the imgfile field lives
@@ -427,7 +440,8 @@ def process_combined_file_lines(lines: List[List[str]], imgfile_index: int, file
 
 
 def combine_act_files() -> None:
-    """
+    """This function combines all generated ACT files.
+
     This function takes all generated ACT files, and combines it into one master file.
     It also replaces the imgfile field of every ACT file with an cond and item field.
 
@@ -459,7 +473,8 @@ def combine_act_files() -> None:
 
 
 def combine_ags_files() -> None:
-    """
+    """This function combines all AGS files
+
     This function takes all found AGS files, and combines it into one master file.
     It also replaces the imgfile field of every ACT file with an cond and item field.
 
@@ -502,9 +517,11 @@ def combine_ags_files() -> None:
         print('Created allAGSFiles.txt')
 
 
+"*** Main function ***"
+
+
 def main() -> None:
-    """
-    Main function that starts all the magic.
+    """Main function that starts all the magic.
 
     It is called at the end of this file.
     :return:
