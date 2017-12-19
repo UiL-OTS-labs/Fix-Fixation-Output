@@ -6,7 +6,7 @@ import re
 from typing import List, Dict, IO
 
 # variables
-_result_path = './result'  # Fixation result files folder. Default is based upon basic Fixation folder structure.
+_result_path = ''  # Fixation result files folder.
 _act_files = []  # This will contain all ACT data, used to generate the allACTFiles file
 
 
@@ -54,9 +54,28 @@ e.g. "D:/eyetrack/exp/data/[project]/result" or "exp/[project]/result"\n"""
     return folder
 
 
-def does_folder_exist(folder: str) -> str:
+def autodetect_result_path() -> str:
     """
-    This function checks if a given folder exists and contains INF/AGC files
+    This function tries to autodetect the right folder to use by walking over all sub folders with a max depth of 1.
+    This is accomplished by simply looping over sub folders till we find one with jnf and agc files.
+
+    :return: The folder if found, otherwise current dir
+    """
+    # Get all sub folders
+    sub_folders = [x[0] for x in os.walk('.')]
+
+    # Loop over them
+    for sub_folder in sub_folders:
+        # Check if this folder contains jnf and agc files. If so, return the name of that folder
+        if does_folder_contain_files('.jnf', sub_folder) and does_folder_contain_files('.agc', sub_folder):
+            return sub_folder
+
+    return '.'
+
+
+def confirm_result_path() -> str:
+    """
+    This function checks if a the current result path exists and contains INF/AGC files
 
     If it exists, the user will be asked with a specified message to confirm that this is the folder to be used.
     If the user indicates that this is in fact not the folder that should be used, it will ask for
@@ -70,20 +89,20 @@ def does_folder_exist(folder: str) -> str:
     """
     # Define a message for if the specified folder exists and contains the right files
     message_exists = 'We\'ve detected a folder we think contains your Fixation result files: {} \n' \
-                     'Is this correct? '.format(folder)
+                     'Is this correct? '.format(_result_path)
 
     # Define a message for if the specified folder does not exist or doesn't contain the right files
     message_does_not_exists = 'We couldn\'t find a folder containing your Fixation result files.'
 
     # Check if the directory exists
-    if os.path.isdir(folder):
+    if os.path.isdir(_result_path):
         # If it exists, check if the directory contains any jnf files. If not, ask for the correct directory
-        if not does_folder_contain_files('.jnf', folder):
+        if not does_folder_contain_files('.jnf', _result_path):
             print(message_does_not_exists)
             return ask_for_path()
 
         # If it exists, check if the directory contains any agc files. If not, ask for the correct directory
-        if not does_folder_contain_files('.agc', folder):
+        if not does_folder_contain_files('.agc', _result_path):
             print(message_does_not_exists)
             return ask_for_path()
 
@@ -93,7 +112,7 @@ def does_folder_exist(folder: str) -> str:
             return ask_for_path()
 
         # Return this folder if the user confirmed it's the right one
-        return folder
+        return _result_path
     else:
         # This directory does not exist, so ask for the right folder
         print(message_does_not_exists)
@@ -470,7 +489,8 @@ def main() -> None:
     global _result_path
 
     # Check if the folder exists and contains the required files
-    _result_path = does_folder_exist(_result_path)
+    _result_path = autodetect_result_path()
+    _result_path = confirm_result_path()
 
     print()
     print('----- Processing individual JNF and AGC files -----')
