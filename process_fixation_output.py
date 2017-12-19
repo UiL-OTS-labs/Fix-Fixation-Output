@@ -137,6 +137,11 @@ def does_folder_contain_files(file_extension: str, folder: str) -> bool:
 
 
 def safe_exit() -> None:
+    """
+    This function is used to exit from the program without closing the window. This is necessary as this script will
+    probably be run on Windows mostly, and default behaviour is to open it's own prompt for the script.
+    :return:
+    """
     print()
     input("Press Enter to continue...")
     exit()
