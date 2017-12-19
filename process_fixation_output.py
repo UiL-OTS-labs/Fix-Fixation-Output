@@ -162,8 +162,30 @@ def safe_exit() -> None:
     :return:
     """
     print()
-    input("Press Enter to continue...")
+    input("Press Enter to exit...")
     exit()
+
+
+def check_number_columns_in_row(row: List, expected_number: int, hard_fail: bool) -> None:
+    """This function checks if there are just as many columns in a row as expected.
+
+    Sometimes fixation derps, and doesn't provide proper output. This function checks for that and displays a warning
+    to the user about this. If specified, it can also stop the function all together.
+
+    :param row: A list representing a row
+    :param expected_number: The expected number of columns in the row
+    :param hard_fail: If the function should stop the script when it's found a misformed line
+    :return: None
+    """
+
+    if len(row) != expected_number:
+        print()
+        print("Badly formatted line found in this file! Stopping.")
+        print("Please check if Fixation hasn't written anything weird to this file")
+        print("Misformatted line: {}".format(" ".join(row)))
+        print("Detected {} colunns, expected {} columns".format(len(row), expected_number))
+        if hard_fail:
+            safe_exit()
 
 
 "*** Processing functions ***"
@@ -218,6 +240,8 @@ def make_trt(lines: List[List[str]]) -> Dict[str, List[str]]:
 
     # Loop over the lines
     for line in lines:
+        # Check if the line is complete
+        check_number_columns_in_row(line, 36, False)
 
         # Cast values to the right types and put them in more descriptive variable names.
         fixation        = int(line[10])
@@ -329,6 +353,8 @@ def make_act(trt: Dict[str, List[str]], agc: str) -> List[List[str]]:
 
         # For every line
         for line in lines:
+            # Check if the line is complete
+            check_number_columns_in_row(line, 28, True)
 
             # Generate the TRT dict key
             key = line[3] + line[5]
@@ -461,7 +487,7 @@ def combine_act_files() -> None:
         # Go over all the generated ACT files
         for k, v in _act_files:
             # Inform the user of what we are doing
-            print('Adding {}'.format(k))
+            print('Adding {}.act'.format(k))
 
             # Process the lines of this file
             process_combined_file_lines(v, 3, f)
@@ -503,7 +529,7 @@ def combine_ags_files() -> None:
         for file in files:
             with open(os.path.join(_result_path, file)) as f:
                 # Inform the user of what we are doing
-                print('Adding {}.act'.format(file))
+                print('Adding {}'.format(file))
 
                 # Load all lines in this file except for the header and split them into columns
                 lines = [x.replace('\r', '').replace('\n', '').split(' ')
