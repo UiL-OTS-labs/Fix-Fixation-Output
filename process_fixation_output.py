@@ -136,6 +136,17 @@ def does_folder_contain_files(file_extension: str, folder: str) -> bool:
     return False
 
 
+def check_result_path_writable_executable() -> bool:
+    """
+    This function checks if the result directory is both writable and executable. We don't need to check readable, as
+    the previous commands to get the directory will fail if they can't read the folder.
+
+    We need executable permissions on the folder so that we can use search functions in the folder.
+    :return: A boolean indicating if the result directory is writable
+    """
+    return os.access(_result_path, os.W_OK) and os.access(_result_path, os.X_OK)
+
+
 def safe_exit() -> None:
     """
     This function is used to exit from the program without closing the window. This is necessary as this script will
@@ -383,14 +394,14 @@ def process_combined_file_lines(lines: List[List[str]], imgfile_index: int, file
     for line in lines:
         # Create a list to hold the output in while processing
         output_line = []
-        for i in range(len(line)):
+        for i, value in enumerate(line):
             # If this is the imgfile field, process it to get the cond and item fields
             if i == imgfile_index:
                 # An image file is named using a naming scheme: {cond+item}.BMP.
                 # cond is a string of at least 1 characters
                 # item is an integer of at least 3 digits
                 # We use a regex to split these into a tuple
-                cond_item = re.findall(r'([a-zA-Z]+)([0-9]+)', line[i])
+                cond_item = re.findall(r'([a-zA-Z]+)([0-9]+)', value)
 
                 # Sanity check mostly to see if it's actually found something, should not error
                 if cond_item is not None and len(cond_item) == 1:
@@ -408,7 +419,7 @@ def process_combined_file_lines(lines: List[List[str]], imgfile_index: int, file
                     safe_exit()
             else:
                 # Otherwise just straight add it to the output
-                output_line.append(line[i])
+                output_line.append(value)
 
         # Write this line to the output file
         file.write(" ".join(output_line))
@@ -455,11 +466,14 @@ def combine_ags_files() -> None:
     These two fields are generated out of the imgfile field.
     :return:
     """
+    # Newline in output for clarity
+    print()
+
     # Get all files ending with ags, and sort them
     files = sorted([x for x in os.listdir(_result_path) if x.lower().endswith('.ags')])
 
     # If there are no AGS files, display a nice message and stop
-    if len(files) == 0:
+    if not len(files):
         print('No AGS files found, skipping this step')
         return
 
@@ -474,7 +488,7 @@ def combine_ags_files() -> None:
         for file in files:
             with open(os.path.join(_result_path, file)) as f:
                 # Inform the user of what we are doing
-                print('Adding {}'.format(file))
+                print('Adding {}.act'.format(file))
 
                 # Load all lines in this file except for the header and split them into columns
                 lines = [x.replace('\r', '').replace('\n', '').split(' ')
@@ -498,10 +512,19 @@ def main() -> None:
     # Use the global _result_path, so that all functions can use it
     global _result_path
 
-    # Check if the folder exists and contains the required files
+    # Try to detect in which subfolder we need to use
     _result_path = autodetect_result_path()
+
+    # Confirm the found path, or ask for one if it's not found.
     _result_path = confirm_result_path()
 
+    # Check if we can write to the result directory
+    if not check_result_path_writable_executable():
+        print()
+        print("Could not write to the results directory. Please check the permissions for that folder or ask for help")
+        safe_exit()
+
+    # Start the processing
     print()
     print('----- Processing individual JNF and AGC files -----')
     process_jnf_agc_files()
