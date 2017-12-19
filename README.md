@@ -19,9 +19,13 @@ Lastly, if the script finds any ```ags``` files, it will also combine these file
 - Python 3
 
 ## Usage
-The easiest way to use this script is to drop it in the same place as your fixation  ```.ini``` file. The script will autodetect the result folder for you in most cases. It will tell you which folder it detected, and ask you to confirm. Type ```n``` if you want to specify a different folder. Otherwise, press ```enter``` to run the script.
+The easiest way to use this script is to drop it in your fixation results folder.
+However, the script will autodetect any result folder located in any subfolder from where you run the script. 
+It will tell you which folder it detected, and ask you to confirm. Type ```n``` if you want to specify a different folder. Otherwise, press ```enter``` to run the script.
 
-If the script didn't autodetect your result folder, or you want to specify a different one, the script will ask you to specify where the folder is located. This can ne a _full path_ like ```D:/eyetrack/data/[projectname]/result``` (Windows) or ```/home/[Username]/eyetrack/data/[projectname]/result``` (Linux). 
+If there are multiple folders found, it will ask you to choose one. Alternatively you can specify one on your own.
+
+If the script didn't autodetect your result folder, or you want to specify a different one, the script will ask you to specify where the folder is located. This can be a _full path_ like ```D:/eyetrack/data/[projectname]/result``` (Windows) or ```/home/[Username]/eyetrack/data/[projectname]/result``` (Linux). 
 
 Alternatively, you can specify a _relative path_ like ```data/result```. Relative paths are paths from the script's location to the desired folder.
 
