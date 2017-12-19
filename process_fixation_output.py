@@ -136,6 +136,12 @@ def does_folder_contain_files(file_extension: str, folder: str) -> bool:
     return False
 
 
+def safe_exit() -> None:
+    print()
+    input("Press Enter to continue...")
+    exit()
+
+
 def sort_jnf_file(file: str) -> List[List[str]]:
     """
     This function loads a JNF files, and sorts it's contents on the imgfile and code fields, in ascending order.
@@ -394,7 +400,7 @@ def process_combined_file_lines(lines: List[List[str]], imgfile_index: int, file
                     print("Badly formatted line found in this file! Stopping!")
                     print("Please check if Fixation hasn't written anything weird to this file")
                     print("Misformatted line: {}".format(" ".join(line)))
-                    exit()
+                    safe_exit()
             else:
                 # Otherwise just straight add it to the output
                 output_line.append(line[i])
@@ -503,6 +509,8 @@ def main() -> None:
 
     print()
     print('----- Done! -----')
+
+    safe_exit()
 
 
 # Only run if this file is executed by itself
