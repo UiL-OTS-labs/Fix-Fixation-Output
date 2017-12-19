@@ -88,14 +88,14 @@ def autodetect_result_path() -> None:
     global _result_path
 
     # Get all sub folders
-    sub_folders = [x[0] for x in os.walk('.')]
+    sub_folders = [(x[0], x[2]) for x in os.walk('.')]
 
     possible_paths = []
 
     # Loop over them
-    for sub_folder in sub_folders:
+    for sub_folder, files in sub_folders:
         # Check if this folder contains jnf and agc files. If so, return the name of that folder
-        if does_folder_contain_files('.jnf', sub_folder) and does_folder_contain_files('.agc', sub_folder):
+        if does_folder_contain_files('.jnf', None, files) and does_folder_contain_files('.agc', None, files):
             possible_paths.append(sub_folder)
 
     # If there is one possible path
@@ -140,15 +140,20 @@ def autodetect_result_path() -> None:
         ask_for_path()
 
 
-def does_folder_contain_files(file_extension: str, folder: str) -> bool:
+def does_folder_contain_files(file_extension: str, folder: str, files: str = None) -> bool:
     """This function is used to check if a folder contains files with a certain file extension
 
     :param file_extension: The required file extension
     :param folder: The to be checked folder
+    :param files: You can give a list of files in this folder if you already have if (optional)
     :return: If the folder contains files with the specified file extension
     """
+    # Get all the files if they weren't given
+    if not files:
+        files = os.listdir(folder)
+
     # For every file in the specified directory
-    for fname in os.listdir(folder):
+    for fname in files:
         # If the file ends with the specified extension, return true
         if fname.lower().endswith(file_extension.lower()):
             return True
