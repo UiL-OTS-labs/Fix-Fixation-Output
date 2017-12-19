@@ -8,7 +8,6 @@ See README.md in https://github.com/UiL-OTS-labs/Fix-Fixation-Output for more de
 Adapted from the original perl scripts developed at UiL OTS.
 """
 
-"*** Imports ***"
 import os
 import re
 from typing import List, Dict, IO
@@ -29,19 +28,21 @@ def ask(message: str) -> bool:
     return input(message + '[Y/n] ') != 'n'
 
 
-def ask_for_path() -> str:
+def ask_for_path() -> None:
     """This funtion is used to ask the user for the location of a folder.
 
     It will also verify that folder, and ask again if the folder doesn't exist.
     :return: folder location
     """
+    global _result_path
+
     # Message to display asking for the folder location
     input_message = """Please fill in the location of the directory. 
 Either relative to this script or relative to the root of the drive.
 e.g. "D:/eyetrack/exp/data/[project]/result" or "exp/[project]/result"\n"""
 
     # Message to display if the entered folder is incorrect
-    message_does_not_exists = 'We couldn\'t find a fixation files in the specified directory.'
+    message_does_not_exists = 'We couldn\'t find Fixation files in the specified directory.'
 
     # Ask for the folder location
     folder = input(input_message)
@@ -49,80 +50,90 @@ e.g. "D:/eyetrack/exp/data/[project]/result" or "exp/[project]/result"\n"""
     # Check if the folder exits
     if not os.path.isdir(folder):
         print('We couldn\'t find the specified directory.')
-        folder = ask_for_path()
+        ask_for_path()
+        return
 
     # Check if the folder contains JNF files
     if not does_folder_contain_files('.jnf', folder):
         print(message_does_not_exists)
-        return ask_for_path()
+        ask_for_path()
+        return
 
     # Check if the folder contains AGC files
     if not does_folder_contain_files('.agc', folder):
         print(message_does_not_exists)
-        return ask_for_path()
+        ask_for_path()
+        return
 
-    return folder
+    _result_path = folder
 
 
-def autodetect_result_path() -> str:
-    """This function tries to autodetect the right folder to use by walking over all sub folders with a max depth of 1.
+def autodetect_result_path() -> None:
+    """This function tries to autodetect Fixation result folders and ask the user which one they want to use.
 
-    :return: The folder if found, otherwise current dir
+    This function looks through the sub folders in the script's running directory. If it finds one, it asks
+    the user to confirm if they want to use this folder. If not, it asks the user to specify the right folder.
+
+    If it finds more, it suggests all of them to the user. The user can pick one, or specify a different one
+    not listed.
+
+    If there are no directories found, it will ask the user for the location of the directory.
+
+    :return: None
     """
+    global _result_path
+
     # Get all sub folders
     sub_folders = [x[0] for x in os.walk('.')]
+
+    possible_paths = []
 
     # Loop over them
     for sub_folder in sub_folders:
         # Check if this folder contains jnf and agc files. If so, return the name of that folder
         if does_folder_contain_files('.jnf', sub_folder) and does_folder_contain_files('.agc', sub_folder):
-            return sub_folder
+            possible_paths.append(sub_folder)
 
-    return '.'
+    # If there is one possible path
+    if len(possible_paths) == 1:
+        # Set it as the path
+        _result_path = possible_paths[0]
+        # Ask for confirmation
+        if not ask('We\'ve detected a folder we think contains your Fixation result files: {} \n'
+                   'Is this correct? '.format(_result_path)):
+            # If the user wants to use a different directory, ask for the location
+            ask_for_path()
+            return
 
+    # If the possible paths is empty, ask for the directory location
+    if not possible_paths:
+        print('We couldn\'t find a folder containing your Fixation result files.')
+        ask_for_path()
+        return
 
-def confirm_result_path() -> str:
-    """This function checks if a the current result path exists and contains INF/AGC files
+    # There are multiple paths, so list them to the user and ask them which one they want to use
+    print("We've detected multiple folders containing Fixation result files:")
+    for i, item in enumerate(possible_paths):
+        print("{}: {}".format(i + 1, item))
 
-    If it exists, the user will be asked with a specified message to confirm that this is the folder to be used.
-    If the user indicates that this is in fact not the folder that should be used, it will ask for
-    the path to the correct folder.
+    print("Please enter the number of the folder you want to use, or press enter to enter a custom path")
+    user_choice = input()
 
-    If the given folder does not exist, the user will be asked to supply the path to the
-    folder.
-
-    :return:
-    """
-    # Define a message for if the specified folder exists and contains the right files
-    message_exists = 'We\'ve detected a folder we think contains your Fixation result files: {} \n' \
-                     'Is this correct? '.format(_result_path)
-
-    # Define a message for if the specified folder does not exist or doesn't contain the right files
-    message_does_not_exists = 'We couldn\'t find a folder containing your Fixation result files.'
-
-    # Check if the directory exists
-    if os.path.isdir(_result_path):
-        # If it exists, check if the directory contains any jnf files. If not, ask for the correct directory
-        if not does_folder_contain_files('.jnf', _result_path):
-            print(message_does_not_exists)
-            return ask_for_path()
-
-        # If it exists, check if the directory contains any agc files. If not, ask for the correct directory
-        if not does_folder_contain_files('.agc', _result_path):
-            print(message_does_not_exists)
-            return ask_for_path()
-
-        # If the directory exists and contains the right files, confirm with the user if this is the directory that
-        # shoule be used. If not, ask for the right folder
-        if not ask(message_exists):
-            return ask_for_path()
-
-        # Return this folder if the user confirmed it's the right one
-        return _result_path
+    # If the response is a digit
+    if user_choice.isdigit():
+        # Cast it to an int
+        user_choice = int(user_choice)
+        # If the response is a valid index
+        if len(possible_paths) >= user_choice > 0:
+            # Use that index
+            _result_path = possible_paths[user_choice - 1]
+        else:
+            # Otherwise, ask for the proper path
+            print('Invalid option selected, please enter the location of the desired directory')
+            ask_for_path()
     else:
-        # This directory does not exist, so ask for the right folder
-        print(message_does_not_exists)
-        return ask_for_path()
+        # Otherwise, just ask for the path
+        ask_for_path()
 
 
 def does_folder_contain_files(file_extension: str, folder: str) -> bool:
@@ -555,11 +566,8 @@ def main() -> None:
     # Use the global _result_path, so that all functions can use it
     global _result_path
 
-    # Try to detect in which subfolder we need to use
-    _result_path = autodetect_result_path()
-
-    # Confirm the found path, or ask for one if it's not found.
-    _result_path = confirm_result_path()
+    # Resolve the result path we need to use
+    autodetect_result_path()
 
     # Check if we can write to the result directory
     if not check_result_path_writable_executable():
