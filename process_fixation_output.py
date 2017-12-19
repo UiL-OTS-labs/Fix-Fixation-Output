@@ -68,6 +68,10 @@ e.g. "D:/eyetrack/exp/data/[project]/result" or "exp/[project]/result"\n"""
     _result_path = folder
 
 
+def format_folder_name(folder: str) -> str:
+    return "(Currect Directory)" + folder[1:]
+
+
 def autodetect_result_path() -> None:
     """This function tries to autodetect Fixation result folders and ask the user which one they want to use.
 
@@ -100,7 +104,7 @@ def autodetect_result_path() -> None:
         _result_path = possible_paths[0]
         # Ask for confirmation
         if not ask('We\'ve detected a folder we think contains your Fixation result files: {} \n'
-                   'Is this correct? '.format(_result_path)):
+                   'Is this correct? '.format(format_folder_name(_result_path))):
             # If the user wants to use a different directory, ask for the location
             ask_for_path()
             return
@@ -114,7 +118,7 @@ def autodetect_result_path() -> None:
     # There are multiple paths, so list them to the user and ask them which one they want to use
     print("We've detected multiple folders containing Fixation result files:")
     for i, item in enumerate(possible_paths):
-        print("{}: {}".format(i + 1, item))
+        print("{}: {}".format(i + 1, format_folder_name(item)))
 
     print("Please enter the number of the folder you want to use, or press enter to enter a custom path")
     user_choice = input()
