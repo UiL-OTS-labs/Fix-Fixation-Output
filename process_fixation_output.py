@@ -27,7 +27,7 @@ def ask(message: str) -> bool:
     :param message: The question to be asked
     :return: If the person answered yes, a True will be returned
     """
-    return input(message + '[y/n] (y is default)').lower() != 'n'
+    return input(message + '[y/n] (y is default) ').lower() != 'n'
 
 
 def ask_for_path() -> None:
@@ -596,6 +596,8 @@ def main() -> None:
     global _ags_present
 
     # Resolve the result path we need to use
+    print('----- Tying to autodetect project folder(s) -----')
+    print()
     autodetect_result_path()
 
     # Check if we can write to the result directory
