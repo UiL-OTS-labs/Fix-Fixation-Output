@@ -10,6 +10,7 @@ Adapted from the original perl scripts developed at UiL OTS.
 
 import os
 import re
+import argparse
 from typing import List, Dict, IO
 
 "*** Variables ***"
@@ -17,6 +18,7 @@ _result_path = ''  # Fixation result files folder.
 _act_files = []  # This will contain all ACT data, used to generate the allACTFiles file
 _agc_present = False  # If the folder contains agc files, used to check if we should do certain steps
 _ags_present = False  # If the folder contains ags files, used to check if we should do certain steps
+
 
 "*** General helper functions ***"
 
@@ -97,9 +99,10 @@ def autodetect_result_path() -> None:
     # Loop over them
     for sub_folder, files in sub_folders:
         # Check if this folder contains jnf and agc/ags files. If so, return the name of that folder
-        if does_folder_contain_files('.jnf', None, files):
-            if does_folder_contain_files('.agc', None, files) or does_folder_contain_files('.ags', None, files):
-                possible_paths.append(sub_folder)
+        if does_folder_contain_files('.jnf', None, files) and does_folder_contain_files('.agc', None, files):
+            possible_paths.append(sub_folder)
+        elif does_folder_contain_files('.ags', None, files):
+            possible_paths.append(sub_folder)
 
     # If there is one possible path
     if len(possible_paths) == 1:
@@ -142,6 +145,20 @@ def autodetect_result_path() -> None:
     else:
         # Otherwise, just ask for the path
         ask_for_path()
+
+
+def check_if_valid_path(path: str) -> bool:
+    """This function checks if a folder is a valid result directory
+
+    :param path:
+    :return: bool
+    """
+    if does_folder_contain_files('.jnf', path) and does_folder_contain_files('.agc', path):
+        return True
+    elif does_folder_contain_files('.ags', path):
+        return True
+
+    return False
 
 
 def does_folder_contain_files(file_extension: str, folder: str, files: str = None) -> bool:
@@ -581,6 +598,24 @@ def combine_ags_files() -> None:
         print('Created allAGSFiles.txt')
 
 
+def arg_parse() -> object:
+    """This function sets up a basic argument parser.
+
+    It can be used to supply the result folder directly from the command line
+
+    :return:
+    """
+    parser = argparse.ArgumentParser(description='This script parses the standard output from Fixation. '
+                                                 'This adds extra information not given by the Fixation output '
+                                                 'and combines all ACT and all AGS files in allACTFiles.txt and '
+                                                 'AllAgsFiles.txt.')
+    parser.add_argument('path', metavar='dir', nargs="?", type=str, help='The location of the folder containing the to '
+                                                                         'be processed files. If the folder is invalid'
+                                                                         ', it will be ignored.')
+
+    return parser.parse_args()
+
+
 "*** Main function ***"
 
 
@@ -595,10 +630,17 @@ def main() -> None:
     global _agc_present
     global _ags_present
 
-    # Resolve the result path we need to use
-    print('----- Tying to autodetect project folder(s) -----')
-    print()
-    autodetect_result_path()
+    # Setup the argument parser
+    args = arg_parse()
+
+    # If a path is supplied through the arguments and is valid
+    if args.path is not None and check_if_valid_path(args.path):
+        _result_path = args.path
+    else:
+        # Otherwise, resolve the result path we need to use
+        print('----- Tying to autodetect project folder(s) -----')
+        print()
+        autodetect_result_path()
 
     # Check if we can write to the result directory
     if not check_result_path_writable_executable():
