@@ -1,6 +1,6 @@
 # Fix Fixation Output
 
-A python script to process the output from Fixation. This adds extra information not given by the Fixation output and combines the ouput.
+A python script to process the output from Fixation. This adds extra information not given by the Fixation output and combines the output.
 
 ## Overview
 The output from Fixation does not contain total Fixation times for regions. This script adds this information by processing Fixation's ```.agc``` and ```.jnf``` files. For every ```.agc``` file, it outputs an ```.act``` file with five extra columns:
