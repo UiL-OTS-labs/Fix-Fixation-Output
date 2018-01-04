@@ -15,6 +15,8 @@ from typing import List, Dict, IO
 "*** Variables ***"
 _result_path = ''  # Fixation result files folder.
 _act_files = []  # This will contain all ACT data, used to generate the allACTFiles file
+_agc_present = False  # If the folder contains agc files, used to check if we should do certain steps
+_ags_present = False  # If the folder contains ags files, used to check if we should do certain steps
 
 "*** General helper functions ***"
 
@@ -25,7 +27,7 @@ def ask(message: str) -> bool:
     :param message: The question to be asked
     :return: If the person answered yes, a True will be returned
     """
-    return input(message + '[Y/n] ') != 'n'
+    return input(message + '[y/n] (y is default)').lower() != 'n'
 
 
 def ask_for_path() -> None:
@@ -59,8 +61,8 @@ e.g. "D:/eyetrack/exp/data/[project]/result" or "exp/[project]/result"\n"""
         ask_for_path()
         return
 
-    # Check if the folder contains AGC files
-    if not does_folder_contain_files('.agc', folder):
+    # Check if the folder contains AGC/AGS files
+    if not does_folder_contain_files('.agc', folder) and not does_folder_contain_files('.ags', folder):
         print(message_does_not_exists)
         ask_for_path()
         return
@@ -94,9 +96,10 @@ def autodetect_result_path() -> None:
 
     # Loop over them
     for sub_folder, files in sub_folders:
-        # Check if this folder contains jnf and agc files. If so, return the name of that folder
-        if does_folder_contain_files('.jnf', None, files) and does_folder_contain_files('.agc', None, files):
-            possible_paths.append(sub_folder)
+        # Check if this folder contains jnf and agc/ags files. If so, return the name of that folder
+        if does_folder_contain_files('.jnf', None, files):
+            if does_folder_contain_files('.agc', None, files) or does_folder_contain_files('.ags', None, files):
+                possible_paths.append(sub_folder)
 
     # If there is one possible path
     if len(possible_paths) == 1:
@@ -398,6 +401,13 @@ def process_jnf_agc_files() -> None:
     ACT file for the corresponding AGC file.
     :return: nothing!
     """
+
+    # If there are no AGC files, display a nice message and stop
+    if not _agc_present:
+        print('No AGC files found, skipping this step')
+        print()
+        return
+
     # Get a sorted list of all JNF files in the result dir
     files = sorted([x for x in os.listdir(_result_path) if x.lower().endswith('.jnf')])
 
@@ -495,6 +505,13 @@ def combine_act_files() -> None:
 
     :return: Nada
     """
+
+    # If there are no AGC files, display a nice message and stop
+    if not _agc_present:
+        print('No AGC files found, skipping this step')
+        print()
+        return
+
     # open the output file
     with open(os.path.join(_result_path, 'allACTFiles.txt'), 'w+') as f:
         # Write the file headers, for clarity
@@ -530,13 +547,13 @@ def combine_ags_files() -> None:
     # Newline in output for clarity
     print()
 
-    # Get all files ending with ags, and sort them
-    files = sorted([x for x in os.listdir(_result_path) if x.lower().endswith('.ags')])
-
     # If there are no AGS files, display a nice message and stop
-    if not len(files):
+    if not _ags_present:
         print('No AGS files found, skipping this step')
         return
+
+    # Get all files ending with ags, and sort them
+    files = sorted([x for x in os.listdir(_result_path) if x.lower().endswith('.ags')])
 
     # Open the output file
     with open(os.path.join(_result_path, 'allAGSFiles.txt'), 'w+') as output_file:
@@ -574,6 +591,8 @@ def main() -> None:
     """
     # Use the global _result_path, so that all functions can use it
     global _result_path
+    global _agc_present
+    global _ags_present
 
     # Resolve the result path we need to use
     autodetect_result_path()
@@ -583,6 +602,14 @@ def main() -> None:
         print()
         print("Could not write to the results directory. Please check the permissions for that folder or ask for help")
         safe_exit()
+
+    # Check if there are agc files present. Put in a variable beforehand because of performance reasons
+    if does_folder_contain_files('.agc', _result_path):
+        _agc_present = True
+
+    # Check if there are ags files present. Put in a variable beforehand because of consistency
+    if does_folder_contain_files('.ags', _result_path):
+        _ags_present = True
 
     # Start the processing
     print()
