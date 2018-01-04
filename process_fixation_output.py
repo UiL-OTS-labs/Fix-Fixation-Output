@@ -110,7 +110,8 @@ def autodetect_result_path() -> None:
                    'Is this correct? '.format(format_folder_name(_result_path))):
             # If the user wants to use a different directory, ask for the location
             ask_for_path()
-            return
+
+        return
 
     # If the possible paths is empty, ask for the directory location
     if not possible_paths:
