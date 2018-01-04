@@ -39,9 +39,9 @@ def ask_for_path() -> None:
     global _result_path
 
     # Message to display asking for the folder location
-    input_message = """Please fill in the location of the directory. 
+    input_message = """Please fill in the location of the directory containing your .JNF, .AGC and/or .AGS files. 
 Either relative to this script or relative to the root of the drive.
-e.g. "D:/eyetrack/exp/data/[project]/result" or "exp/[project]/result"\n"""
+For example: "C:/Users/John Doe/project/result" or "[project]/result"\n"""
 
     # Message to display if the entered folder is incorrect
     message_does_not_exists = 'We couldn\'t find Fixation files in the specified directory.'
@@ -55,8 +55,8 @@ e.g. "D:/eyetrack/exp/data/[project]/result" or "exp/[project]/result"\n"""
         ask_for_path()
         return
 
-    # Check if the folder contains JNF files
-    if not does_folder_contain_files('.jnf', folder):
+    # Check if the folder contains JNF files if there are also no AGS files
+    if not does_folder_contain_files('.jnf', folder) and not does_folder_contain_files('.ags', folder):
         print(message_does_not_exists)
         ask_for_path()
         return
@@ -136,7 +136,7 @@ def autodetect_result_path() -> None:
             _result_path = possible_paths[user_choice - 1]
         else:
             # Otherwise, ask for the proper path
-            print('Invalid option selected, please enter the location of the desired directory')
+            print('Invalid or no option selected, please enter the location of the desired directory')
             ask_for_path()
     else:
         # Otherwise, just ask for the path
