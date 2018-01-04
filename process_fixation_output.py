@@ -610,8 +610,8 @@ def arg_parse() -> object:
                                                  'and combines all ACT and all AGS files in allACTFiles.txt and '
                                                  'AllAgsFiles.txt.')
     parser.add_argument('path', metavar='dir', nargs="?", type=str, help='The location of the folder containing the to '
-                                                                         'be processed files. If the folder is invalid'
-                                                                         ', it will be ignored.')
+                                                                         'be processed files. If the folder is invalid '
+                                                                         'or omitted, it will be ignored.')
 
     return parser.parse_args()
 
