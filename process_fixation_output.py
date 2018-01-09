@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 """
 A python script to process the output from Fixation. This adds extra information not given by the Fixation output
 and combines the output.
@@ -7,11 +7,12 @@ See README.md in https://github.com/UiL-OTS-labs/Fix-Fixation-Output for more de
 
 Adapted from the original perl scripts developed at UiL OTS.
 """
+from __future__ import print_function
 
 import os
 import re
 import argparse
-from typing import List, Dict, IO
+import inspect
 
 "*** Variables ***"
 _result_path = ''  # Fixation result files folder.
@@ -20,19 +21,28 @@ _agc_present = False  # If the folder contains agc files, used to check if we sh
 _ags_present = False  # If the folder contains ags files, used to check if we should do certain steps
 
 
+"*** Python 2/3 cross compatibility ***"
+
+try:
+    # This will trigger an error in Python 3
+    inspect.isfunction(raw_input)
+except NameError:
+    # We catch that error here, and define raw_input with the Python 3 input function
+    raw_input = input
+
 "*** General helper functions ***"
 
 
-def ask(message: str) -> bool:
+def ask(message):
     """This function is a simple way to get a [Y/n] message on the screen.
 
     :param message: The question to be asked
     :return: If the person answered yes, a True will be returned
     """
-    return input(message + '[y/n] (y is default) ').lower() != 'n'
+    return raw_input(message + '[y/n] (y is default) ').lower() != 'n'
 
 
-def ask_for_path() -> None:
+def ask_for_path():
     """This funtion is used to ask the user for the location of a folder.
 
     It will also verify that folder, and ask again if the folder doesn't exist.
@@ -49,7 +59,7 @@ For example: "C:/Users/John Doe/project/result" or "[project]/result"\n"""
     message_does_not_exists = 'We couldn\'t find Fixation files in the specified directory.'
 
     # Ask for the folder location
-    folder = input(input_message)
+    folder = raw_input(input_message)
 
     # Check if the folder exits
     if not os.path.isdir(folder):
@@ -72,11 +82,11 @@ For example: "C:/Users/John Doe/project/result" or "[project]/result"\n"""
     _result_path = folder
 
 
-def format_folder_name(folder: str) -> str:
+def format_folder_name(folder):
     return "(Currect Directory)" + folder[1:]
 
 
-def autodetect_result_path() -> None:
+def autodetect_result_path():
     """This function tries to autodetect Fixation result folders and ask the user which one they want to use.
 
     This function looks through the sub folders in the script's running directory. If it finds one, it asks
@@ -128,7 +138,7 @@ def autodetect_result_path() -> None:
         print("{}: {}".format(i + 1, format_folder_name(item)))
 
     print("Please enter the number of the folder you want to use, or press enter to enter a custom path")
-    user_choice = input()
+    user_choice = raw_input()
 
     # If the response is a digit
     if user_choice.isdigit():
@@ -147,7 +157,7 @@ def autodetect_result_path() -> None:
         ask_for_path()
 
 
-def check_if_valid_path(path: str) -> bool:
+def check_if_valid_path(path):
     """This function checks if a folder is a valid result directory
 
     :param path:
@@ -161,7 +171,7 @@ def check_if_valid_path(path: str) -> bool:
     return False
 
 
-def does_folder_contain_files(file_extension: str, folder: str, files: str = None) -> bool:
+def does_folder_contain_files(file_extension, folder, files=None):
     """This function is used to check if a folder contains files with a certain file extension
 
     :param file_extension: The required file extension
@@ -170,7 +180,7 @@ def does_folder_contain_files(file_extension: str, folder: str, files: str = Non
     :return: If the folder contains files with the specified file extension
     """
     # Get all the files if they weren't given
-    if not files:
+    if files is None:
         files = os.listdir(folder)
 
     # For every file in the specified directory
@@ -183,7 +193,7 @@ def does_folder_contain_files(file_extension: str, folder: str, files: str = Non
     return False
 
 
-def check_result_path_writable_executable() -> bool:
+def check_result_path_writable_executable():
     """This function checks if the result directory is both writable and executable.
 
     We don't need to check readable, as the previous commands to get the directory will fail if they can't read the
@@ -195,7 +205,7 @@ def check_result_path_writable_executable() -> bool:
     return os.access(_result_path, os.W_OK) and os.access(_result_path, os.X_OK)
 
 
-def safe_exit() -> None:
+def safe_exit():
     """This function is used to exit from the program without closing the window.
 
     This function asks the user to press enter before actually closing the window. This is necessary as this script will
@@ -203,11 +213,11 @@ def safe_exit() -> None:
     :return:
     """
     print()
-    input("Press Enter to exit...")
+    raw_input("Press Enter to exit...")
     exit()
 
 
-def check_number_columns_in_row(row: List, expected_number: int, hard_fail: bool) -> None:
+def check_number_columns_in_row(row, expected_number, hard_fail):
     """This function checks if there are just as many columns in a row as expected.
 
     Sometimes fixation derps, and doesn't provide proper output. This function checks for that and displays a warning
@@ -232,7 +242,7 @@ def check_number_columns_in_row(row: List, expected_number: int, hard_fail: bool
 "*** Processing functions ***"
 
 
-def sort_jnf_file(file: str) -> List[List[str]]:
+def sort_jnf_file(file):
     """This function sorts the entries in a JNF file
 
     This function loads a JNF files, and sorts it's contents on the imgfile and code fields, in ascending order.
@@ -255,7 +265,7 @@ def sort_jnf_file(file: str) -> List[List[str]]:
         return lines
 
 
-def make_trt(lines: List[List[str]]) -> Dict[str, List[str]]:
+def make_trt(lines):
     """This function calculates the missing values from a JNF file.
 
     :param lines: A list of lists representing the JNF file
@@ -376,7 +386,7 @@ def make_trt(lines: List[List[str]]) -> Dict[str, List[str]]:
     return trt
 
 
-def make_act(trt: Dict[str, List[str]], agc: str) -> List[List[str]]:
+def make_act(trt, agc):
     """This function generates a ACT file for a given AGC file and a given TRT dict.
 
     :param trt: The TRT dict generated by make_trt(1).
@@ -412,7 +422,7 @@ def make_act(trt: Dict[str, List[str]], agc: str) -> List[List[str]]:
     return act
 
 
-def process_jnf_agc_files() -> None:
+def process_jnf_agc_files():
     """This function processes all JNF and AGC files.
 
     This function opens an JNF file, sorts it and calculates a trt for it. It then uses this generated TRT to create a
@@ -465,7 +475,7 @@ def process_jnf_agc_files() -> None:
         print()
 
 
-def process_combined_file_lines(lines: List[List[str]], imgfile_index: int, file: IO) -> None:
+def process_combined_file_lines(lines, imgfile_index, file):
     """This function processes every supplied line and writes it to a supplied file
 
     This function is used by both combine functions to write their lines to the combined file.
@@ -513,7 +523,7 @@ def process_combined_file_lines(lines: List[List[str]], imgfile_index: int, file
         file.write("\n")
 
 
-def combine_act_files() -> None:
+def combine_act_files():
     """This function combines all generated ACT files.
 
     This function takes all generated ACT files, and combines it into one master file.
@@ -553,7 +563,7 @@ def combine_act_files() -> None:
         print()
 
 
-def combine_ags_files() -> None:
+def combine_ags_files():
     """This function combines all AGS files
 
     This function takes all found AGS files, and combines it into one master file.
@@ -598,7 +608,7 @@ def combine_ags_files() -> None:
         print('Created allAGSFiles.txt')
 
 
-def arg_parse() -> object:
+def arg_parse():
     """This function sets up a basic argument parser.
 
     It can be used to supply the result folder directly from the command line
@@ -619,7 +629,7 @@ def arg_parse() -> object:
 "*** Main function ***"
 
 
-def main() -> None:
+def main():
     """Main function that starts all the magic.
 
     It is called at the end of this file.
