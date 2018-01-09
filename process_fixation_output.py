@@ -13,13 +13,13 @@ import os
 import re
 import argparse
 import inspect
+import sys
 
 "*** Variables ***"
 _result_path = ''  # Fixation result files folder.
 _act_files = []  # This will contain all ACT data, used to generate the allACTFiles file
 _agc_present = False  # If the folder contains agc files, used to check if we should do certain steps
 _ags_present = False  # If the folder contains ags files, used to check if we should do certain steps
-
 
 "*** Python 2/3 cross compatibility ***"
 
@@ -32,6 +32,27 @@ except NameError:
 
 "*** General helper functions ***"
 
+
+def exists_in_path(cmd):
+    """This function checks if a given command is registered in the PATH of this computer
+
+    Is used as a way to check for installed terminal emulators
+
+    :param cmd:
+    :return:
+    """
+    # can't search the path if a directory is specified
+    assert not os.path.dirname(cmd)
+
+    extensions = os.environ.get("PATHEXT", "").split(os.pathsep)
+    for directory in os.environ.get("PATH", "").split(os.pathsep):
+        base = os.path.join(directory, cmd)
+        options = [base] + [(base + ext) for ext in extensions]
+        for filename in options:
+            if os.path.exists(filename):
+                return True
+
+    return False
 
 def ask(message):
     """This function is a simple way to get a [Y/n] message on the screen.
@@ -685,4 +706,21 @@ def main():
 
 # Only run if this file is executed by itself
 if __name__ == '__main__':
+
+    # If this is Linux, and we are not running through a terminal, open a terminal and execute there.
+    if (sys.platform == "linux2" or sys.platform == "linux") and not sys.stdout.isatty():
+        # List of supported terminal emulators
+        terminals = ['gnome-terminal', 'mate-terminal', 'xfce4-terminal', 'lxterminal', 'rxvt-unicode', 'rxvt', 'xterm']
+
+        # Loop over the terminals
+        for terminal in terminals:
+            # If it is found, and installed
+            if exists_in_path(terminal):
+                # Execute a terminal and run Python in it
+                os.system(terminal + " -e 'python process_fixation_output.py'")
+                break
+
+        # Stop this instance of the code
+        exit()
+
     main()
