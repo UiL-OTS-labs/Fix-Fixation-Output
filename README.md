@@ -16,16 +16,17 @@ The script will also combine all the generated ```.act``` files into a single fi
 Lastly, if the script finds any ```ags``` files, it will also combine these files into a single file: ```AllAGSFiles.txt```. The ```planame``` will also be split into the ```condition``` and ```item``` fields.
 
 ## Requirement
-- Python 3
+- Python 2 or Python 3
 
 ## Usage
 The easiest way to use this script is to drop it in your fixation results folder.
 However, the script will autodetect any result folder located in any subfolder from where you run the script. 
-It will tell you which folder it detected, and ask you to confirm. Type ```n``` if you want to specify a different folder. Otherwise, press ```enter``` to run the script.
+
+If there is only one folder, it will tell you which folder it detected and ask you to confirm. Type ```n``` if you want to specify a different folder. Otherwise, press ```enter``` to run the script.
 
 If there are multiple folders found, it will ask you to choose one. Alternatively you can specify one on your own.
 
-If the script didn't autodetect your result folder, or you want to specify a different one, the script will ask you to specify where the folder is located. This can be a _full path_ like ```D:/eyetrack/data/[projectname]/result``` (Windows) or ```/home/[Username]/eyetrack/data/[projectname]/result``` (Linux). 
+If the script didn't autodetect your result folder, or you want to specify a different one, type in the location of the folder. This can be a _full path_ like ```D:/eyetrack/data/[projectname]/result``` (Windows) or ```/home/[Username]/eyetrack/data/[projectname]/result``` (Linux). 
 
 Alternatively, you can specify a _relative path_ like ```data/result```. Relative paths are paths from the script's location to the desired folder.
 
