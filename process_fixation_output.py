@@ -226,7 +226,7 @@ def check_result_path_writable_executable():
     return os.access(_result_path, os.W_OK) and os.access(_result_path, os.X_OK)
 
 
-def safe_exit():
+def safe_exit(status_code = 0):
     """This function is used to exit from the program without closing the window.
 
     This function asks the user to press enter before actually closing the window. This is necessary as this script will
@@ -235,7 +235,7 @@ def safe_exit():
     """
     print()
     raw_input("Press Enter to exit...")
-    exit()
+    sys.exit(status_code)
 
 
 def check_number_columns_in_row(row, expected_number, hard_fail):
@@ -721,6 +721,6 @@ if __name__ == '__main__':
                 break
 
         # Stop this instance of the code
-        exit()
+        sys.exit(0)
 
     main()
