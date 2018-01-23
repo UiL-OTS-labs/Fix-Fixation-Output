@@ -17,9 +17,11 @@ import sys
 
 "*** Variables ***"
 _result_path = ''  # Fixation result files folder.
+_output_path = ''  # The folder to which we should output, if none is supplied, the result folder will be used
 _act_files = []  # This will contain all ACT data, used to generate the allACTFiles file
 _agc_present = False  # If the folder contains agc files, used to check if we should do certain steps
 _ags_present = False  # If the folder contains ags files, used to check if we should do certain steps
+_safe_exit = True  # This is set to false in the tests cases, so that we don't need to press something to exit
 
 "*** Python 2/3 cross compatibility ***"
 
@@ -54,6 +56,7 @@ def exists_in_path(cmd):
 
     return False
 
+
 def ask(message):
     """This function is a simple way to get a [Y/n] message on the screen.
 
@@ -72,7 +75,7 @@ def ask_for_path():
     global _result_path
 
     # Message to display asking for the folder location
-    input_message = """Please fill in the location of the directory containing your .JNF, .AGC and/or .AGS files. 
+    input_message = """Please fill in the location of the directory containing your .JNF, .AGC and/or .AGS files.
 Either relative to this script or relative to the root of the drive.
 For example: "C:/Users/John Doe/project/result" or "[project]/result"\n"""
 
@@ -214,7 +217,7 @@ def does_folder_contain_files(file_extension, folder, files=None):
     return False
 
 
-def check_result_path_writable_executable():
+def check_path_writable_executable(path):
     """This function checks if the result directory is both writable and executable.
 
     We don't need to check readable, as the previous commands to get the directory will fail if they can't read the
@@ -223,10 +226,10 @@ def check_result_path_writable_executable():
     We need executable permissions on the folder so that we can use search functions in the folder.
     :return: A boolean indicating if the result directory is writable
     """
-    return os.access(_result_path, os.W_OK) and os.access(_result_path, os.X_OK)
+    return os.access(path, os.W_OK) and os.access(path, os.X_OK)
 
 
-def safe_exit(status_code = 0):
+def safe_exit(status_code=0):
     """This function is used to exit from the program without closing the window.
 
     This function asks the user to press enter before actually closing the window. This is necessary as this script will
@@ -234,7 +237,8 @@ def safe_exit(status_code = 0):
     :return:
     """
     print()
-    raw_input("Press Enter to exit...")
+    if _safe_exit:
+        raw_input("Press Enter to exit...")
     sys.exit(status_code)
 
 
@@ -257,7 +261,11 @@ def check_number_columns_in_row(row, expected_number, hard_fail):
         print("Misformatted line: {}".format(" ".join(row)))
         print("Detected {} colunns, expected {} columns".format(len(row), expected_number))
         if hard_fail:
-            safe_exit()
+            safe_exit(4)
+        else:
+            return False
+
+    return True
 
 
 "*** Processing functions ***"
@@ -488,7 +496,7 @@ def process_jnf_agc_files():
                 "NumFixQualNot0", "totfixQual0dur", "totfixQual0cnt"]] + act
 
         # Write the ACT file to an actual file on the filesysten
-        with open(os.path.join(_result_path, '{}.act'.format(short_filename)), 'w+') as f:
+        with open(os.path.join(_output_path, '{}.act'.format(short_filename)), 'w+') as f:
             f.writelines([' '.join(x) + "\n" for x in act])
             f.close()
 
@@ -534,7 +542,7 @@ def process_combined_file_lines(lines, imgfile_index, file):
                     print("Badly formatted line found in this file! Stopping!")
                     print("Please check if Fixation hasn't written anything weird to this file")
                     print("Misformatted line: {}".format(" ".join(line)))
-                    safe_exit()
+                    safe_exit(2)
             else:
                 # Otherwise just straight add it to the output
                 output_line.append(value)
@@ -562,7 +570,7 @@ def combine_act_files():
         return
 
     # open the output file
-    with open(os.path.join(_result_path, 'allACTFiles.txt'), 'w+') as f:
+    with open(os.path.join(_output_path, 'allACTFiles.txt'), 'w+') as f:
         # Write the file headers, for clarity
         print('Writing headers')
         f.write('expname blocknr subjectnr cond item pagenr code code2 ffdur ffqual ffbck ffin ffout rpdur rpqual '
@@ -605,7 +613,7 @@ def combine_ags_files():
     files = sorted([x for x in os.listdir(_result_path) if x.lower().endswith('.ags')])
 
     # Open the output file
-    with open(os.path.join(_result_path, 'allAGSFiles.txt'), 'w+') as output_file:
+    with open(os.path.join(_output_path, 'allAGSFiles.txt'), 'w+') as output_file:
         # Write the file headers, for clarity
         print('Writing headers')
         output_file.write('expname cond item timfile blocknr subjectnr pagenr samplenr samstart event fixnr fixdur '
@@ -644,13 +652,17 @@ def arg_parse():
                                                                          'be processed files. If the folder is invalid '
                                                                          'or omitted, it will be ignored.')
 
+    parser.add_argument('output', metavar='out', nargs="?", type=str, help='The location of the folder where the output'
+                                                                           ' should be stored. When not supplied, the '
+                                                                           'input dir will be used.')
+
     return parser.parse_args()
 
 
 "*** Main function ***"
 
-
-def main():
+# These parameters are used in the testcases
+def main(result_path=None, output_path=None):
     """Main function that starts all the magic.
 
     It is called at the end of this file.
@@ -658,26 +670,39 @@ def main():
     """
     # Use the global _result_path, so that all functions can use it
     global _result_path
+    global _output_path
     global _agc_present
     global _ags_present
 
-    # Setup the argument parser
-    args = arg_parse()
+    # Check if the paths were supplied
+    if result_path is None and output_path is None:
+        # Setup the argument parser
+        args = arg_parse()
 
-    # If a path is supplied through the arguments and is valid
-    if args.path is not None and check_if_valid_path(args.path):
-        _result_path = args.path
+        # If a path is supplied through the arguments and is valid
+        if args.path is not None and check_if_valid_path(args.path):
+            _result_path = args.path
+        else:
+            # Otherwise, resolve the result path we need to use
+            print('----- Tying to autodetect project folder(s) -----')
+            print()
+            autodetect_result_path()
+
+        # If an output path is supplied through the arguments and is valid
+        if args.output is not None and check_path_writable_executable(args.output):
+            _output_path = args.output
+        else:
+            # Otherwise, default to the result path
+            _output_path = _result_path
     else:
-        # Otherwise, resolve the result path we need to use
-        print('----- Tying to autodetect project folder(s) -----')
-        print()
-        autodetect_result_path()
+        _result_path = result_path
+        _output_path = output_path
 
     # Check if we can write to the result directory
-    if not check_result_path_writable_executable():
+    if not check_path_writable_executable(_result_path):
         print()
         print("Could not write to the results directory. Please check the permissions for that folder or ask for help")
-        safe_exit()
+        safe_exit(3)
 
     # Check if there are agc files present. Put in a variable beforehand because of performance reasons
     if does_folder_contain_files('.agc', _result_path):
