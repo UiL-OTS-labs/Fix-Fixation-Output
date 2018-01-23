@@ -1,4 +1,5 @@
 # Fix Fixation Output
+[![Build Status](https://travis-ci.org/UiL-OTS-labs/Fix-Fixation-Output.svg?branch=master)](https://travis-ci.org/UiL-OTS-labs/Fix-Fixation-Output)
 
 A python script to process the output from Fixation. This adds extra information not given by the Fixation output and 
 combines the output.
