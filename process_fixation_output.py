@@ -684,7 +684,7 @@ def main(result_path=None, output_path=None):
             _result_path = args.path
         else:
             # Otherwise, resolve the result path we need to use
-            print('----- Trying to autodetect project folder(s) -----')
+            print('-----  Trying to autodetect result folder(s) containing Fixation output files -----')
             print()
             autodetect_result_path()
 
